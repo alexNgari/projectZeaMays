@@ -7,4 +7,4 @@
 3. ResNet50
 4. Transfer learning
 5. Detection
-6. Having fun! For remember kids,... all work with not play makes Jack a dull boy.
+6. Having fun! For remember kids,... all work and no play makes Jack a dull boy
