@@ -2,21 +2,23 @@
 import pandas as pd
 
 #%%     # Read csv
-handheldData = pd.read_csv('NLB_handheld.csv')
-print(handheldData.head(10))
+boom = pd.read_csv('images_boom0.csv')
+print(boom.head(10))
 
 # %%    # Drop duplicate images ans remove useless columns
-handheldData.drop_duplicates('image', inplace=True, ignore_index=True)
-handheldData.drop(['user', 'day', 'month', 'year', 'hour', 'minute'], axis='columns', inplace=True)
-print(handheldData.head(10))
+# boom.drop_duplicates('image', inplace=True, ignore_index=True)
+# boom.drop(['user', 'day', 'month', 'year', 'hour', 'minute'], axis='columns', inplace=True)
+# print(boom.head(10))
 
 #%%     # Create 'NLB' column and remove coordinates
-import numpy as np
-handheldData['NLBPresent'] = np.where(np.sum(handheldData.iloc[:, 1:], axis=1)!=0, 1, 0)
-handheldData.drop(['x1', 'y1', 'x2', 'y2'], axis='columns', inplace=True)
-# print(handheldData.head(10))
+# import numpy as np
+# boom['NLBPresent'] = np.where(np.sum(boom.iloc[:, 1:], axis=1)!=0, 1, 0)
+# boom.drop(['x1', 'y1', 'x2', 'y2'], axis='columns', inplace=True)
+# print(boom.head(10))
+boom['image'] = boom['image'].astype(str)+'.JPG'
+print(boom.head(10))
 
 # %%    # Save file
-handheldData.to_csv('NLB__classification.csv', index=False)
+boom.to_csv('images_boom.csv', index=False)
 
 # %%

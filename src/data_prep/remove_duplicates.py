@@ -4,8 +4,9 @@ Removes all duplicate files in the subject directory.
 """
 import os
 import hashlib
+from src.useful_stuff.timer import time_this
 
-
+@time_this
 def find_duplicates(data_dir):
     """
     Return a list of absolute paths to all duplicate files in directory.
@@ -21,8 +22,8 @@ def find_duplicates(data_dir):
         for file_name in os.listdir(directory):
             file_name = f'{directory}/{file_name}'
             if os.path.isfile(file_name):
-                with open(file_name, 'rb') as f:
-                    file_hash = hashlib.md5(f.read()).hexdigest()
+                with open(file_name, 'rb') as file:
+                    file_hash = hashlib.md5(file.read()).hexdigest()
                 try:
                     temp = im_hashes[file_hash]
                     del temp
@@ -35,6 +36,7 @@ def find_duplicates(data_dir):
     append_stuff(data_dir, im_hashes)
     return duplicates
 
+@time_this
 def delete_files(file_names_list):
     """
         Deletes all the files in the list of file names passed.
