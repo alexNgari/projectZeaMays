@@ -3,10 +3,10 @@ Script to prepare dataset.
 """
 #%%
 import os
-from src.data_prep.convert_annotations import convert_annotations
-from src.data_prep.remove_duplicates import find_duplicates, delete_files
-from src.data_prep.resize_images import resize_images
-from src.data_prep.group_images import group_images
+from src.preprocessing.convert_annotations import convert_annotations
+from src.preprocessing.remove_duplicates import find_duplicates, delete_files
+from src.preprocessing.resize_images import resize_images
+from src.preprocessing.group_images import group_images
 
 
 #%%
@@ -37,3 +37,5 @@ for source_dir in SOURCE_DIRS:
 IMAGES_DIR = os.path.join(DATA_DIR, 'NLB_stuff_resized')
 DESTINATION_DIR = os.path.join(DATA_DIR, 'NLB_stuff_separated')
 group_images(IMAGES_DIR, ANNOTATION_DIR, DESTINATION_DIR)
+
+#%%
