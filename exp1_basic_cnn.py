@@ -3,11 +3,9 @@ Stuff
 """
 #%%
 import os
-import sys
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers, models
-import matplotlib.pyplot as plt
 from src.preprocessing.image_gen import ImageGenerator, BalanceImageGenerator
 
 #%%
@@ -52,7 +50,7 @@ for item, label in ds_faw().take(1):
     print(label)
 print(ds_faw())
 
-#%%
+#%% #Test set
 test = test_faw.concatenate(test_healthy)
 test = test.concatenate(test_zinc).shuffle(1000)
 test = test.batch(2*BATCH_SIZE)
@@ -61,7 +59,7 @@ test = test.batch(2*BATCH_SIZE)
 for item in test.take(1):
     print(item)
 
-#%%
+#%% #Validation set
 val = val_faw.concatenate(val_healthy)
 val = val.concatenate(val_zinc)
 val = val.batch(2*BATCH_SIZE)

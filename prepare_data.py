@@ -3,11 +3,8 @@ Script to prepare dataset.
 """
 #%%
 import os
-from src.preprocessing.convert_annotations import convert_annotations
-from src.preprocessing.remove_duplicates import find_duplicates, delete_files
-from src.preprocessing.resize_images import resize_images
-from src.preprocessing.group_images import group_images
-
+from src.preprocessing.raw_transforms import convert_annotations, find_duplicates, delete_files
+from src.preprocessing.raw_transforms import resize_images, group_images
 
 #%%
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))

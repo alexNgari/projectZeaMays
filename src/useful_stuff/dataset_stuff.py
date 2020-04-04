@@ -1,7 +1,6 @@
 """
 Helper functions for the image generator classes.
 """
-import os
 import tensorflow as tf
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE

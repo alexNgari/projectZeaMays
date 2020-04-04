@@ -12,11 +12,12 @@ class ImageGenerator():
     """
     Generator to produce batches of augmented data.
     """
-    def __init__(self, data_dir, image_size, class_labels):
+    def __init__(self, data_dir, image_size, class_labels, *, for_cnn=True):
         """
         params: directory to images belonging to one class (str)
                 integer describing number of pixels on one side of images.
         """
+        self.for_cnn = for_cnn
         self.data_dir = data_dir
         self.label = data_dir.split('/')[-1]
         self.image_size = image_size
@@ -53,10 +54,16 @@ class ImageGenerator():
         return test_set, val_set
 
     def __call__(self):
-        return self.full_set\
-                    .shuffle(int(0.8*0.8*self.get_num_images()))\
-                    .map(augment, num_parallel_calls=AUTOTUNE)\
-                    .repeat()
+        if self.for_cnn:
+            return self.full_set\
+                        .shuffle(int(0.8*0.8*self.get_num_images()))\
+                        .map(augment, num_parallel_calls=AUTOTUNE)\
+                        .repeat()
+        # else:
+        #     return self.full_set\
+        #                 .shuffle(int(0.8*0.8*self.get_num_images()))\
+        #                 .map(augment, num_parallel_calls=AUTOTUNE)\
+        #                 .repeat()
 
 
 class BalanceImageGenerator():
