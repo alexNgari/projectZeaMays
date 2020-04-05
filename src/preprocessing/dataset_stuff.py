@@ -1,7 +1,10 @@
 """
 Helper functions for the image generator classes.
 """
+import numpy as np
 import tensorflow as tf
+import cv2
+from skimage import io, feature, color, img_as_ubyte
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
@@ -61,3 +64,31 @@ def augment(img, label):
     # img = tf.image.random_hue(img, 0.3)
     # img = tf.image.random_saturation(img, lower=0.0, upper=0.3)
     return img, label
+
+
+def get_colour_features(image):
+    """
+    param:  Abs path to image to extract features from.
+    return: Array of means and standard deviations of BGR.
+    """
+    image = cv2.imread(image)
+    (means, std_devs) = cv2.meanStdDev(image)
+    return np.concatenate([means, std_devs]).flatten()
+
+def get_texture_features(image):
+    """
+    param:  path to image
+    return: texture features: []
+    """
+    image = io.imread(image)
+    image = color.rgb2gray(image)
+    image = img_as_ubyte(image)
+    glcm = feature.greycomatrix(image, [1], [0])
+    features = []
+    features.append(feature.greycoprops(glcm, 'contrast')[0, 0])
+    features.append(feature.greycoprops(glcm, 'dissimilarity')[0, 0])
+    features.append(feature.greycoprops(glcm, 'homogeneity')[0, 0])
+    features.append(feature.greycoprops(glcm, 'energy')[0, 0])
+    features.append(feature.greycoprops(glcm, 'correlation')[0, 0])
+    features.append(feature.greycoprops(glcm, 'ASM')[0, 0])
+    return np.array(features)

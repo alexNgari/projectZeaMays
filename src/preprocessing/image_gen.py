@@ -4,7 +4,7 @@ Methods and classes to generate batches of images to feed to models.
 #%% Imports
 import os
 import tensorflow as tf
-from src.useful_stuff.dataset_stuff import get_all_files, process_path, augment
+from src.preprocessing.dataset_stuff import get_all_files, process_path, augment
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
