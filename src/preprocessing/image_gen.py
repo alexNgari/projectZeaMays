@@ -12,7 +12,7 @@ class ImageGenerator():
     """
     Generator to produce batches of augmented data.
     """
-    def __init__(self, data_dir, image_size, class_labels, *, for_cnn=True):
+    def __init__(self, data_dir, image_size, class_labels: list, *, for_cnn=True):
         """
         params: directory to images belonging to one class (str)
                 integer describing number of pixels on one side of images.
@@ -21,7 +21,8 @@ class ImageGenerator():
         self.data_dir = data_dir
         self.label = data_dir.split('/')[-1]
         self.image_size = image_size
-        self.class_labels = class_labels
+        self.class_labels: tf.Tensor = tf.convert_to_tensor(class_labels)
+        self.indices = tf.range(self.class_labels.shape[0])
         self.full_set = None
 
     def encode_labels(self, img):
@@ -29,8 +30,9 @@ class ImageGenerator():
         params: encoded image and string label
         return: image and one-hot-encoded label
         """
-        encoded_label = self.class_labels.index(self.label)
-        encoded_label = tf.convert_to_tensor(encoded_label, dtype=tf.int64)
+        encoded_label = tf.reshape(tf.where(self.class_labels==self.label), (1,))[0]
+        encoded_label = tf.one_hot(self.indices, self.indices.shape[0])[encoded_label]
+        # encoded_label = tf.convert_to_tensor(encoded_label, dtype=tf.int64)
         return img, encoded_label
 
     def get_num_images(self):

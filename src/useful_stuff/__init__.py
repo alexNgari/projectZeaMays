@@ -3,4 +3,4 @@ This package contains all the useful operations you might want to carry out repe
 your code. Add the functions/classes here as separate modules then update the __all__ variable.
 """
 
-__all__ = ['timer']
+__all__ = ['timer', 'metrics']
