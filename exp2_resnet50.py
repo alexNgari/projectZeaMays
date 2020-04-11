@@ -14,19 +14,28 @@ from src.preprocessing.image_gen import MultiTaskImageGen, BalanceImageGenerator
 from src.applications.resnet_custom import make_model
 
 #%% #Check for TPU
-try:
-  tpu = tf.distribute.cluster_resolver.TPUClusterResolver() # TPU detection
-except ValueError: # If TPU not found
-  tpu = None 
+resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='fyp',
+                                                          zone='europe-west4-a',
+                                                          project='eeefyp')
+tf.config.experimental_connect_to_cluster(resolver)
+tf.tpu.experimental.initialize_tpu_system(resolver)
+strategy=tf.distribute.experimental.TPUStrategy(resolver)                                                          
+# try:
+  # resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='fyp',
+  #                                                         zone='europe-west4-a',
+  #                                                         project='eeefyp') # TPU detection
+# except ValueError: # If TPU not found
+#   tpu = None 
 
-if tpu:
-  tf.tpu.experimental.initialize_tpu_system(tpu)
-  strategy = tf.distribute.experimental.TPUStrategy(tpu, steps_per_run=128)
-  print('Running on TPU ', tpu.cluster_spec().as_dict()['worker'])  
-else:
-  strategy = tf.distribute.get_strategy() # Default strategy that works on CPU and single GPU
-  print('Running default instead')
-print("Number of accelerators: ", strategy.num_replicas_in_sync)
+# if tpu:
+#   tf.config.experimental_connect_to_cluster(resolver)
+#   tf.tpu.experimental.initialize_tpu_system(tpu)
+#   strategy = tf.distribute.experimental.TPUStrategy(tpu, steps_per_run=128)
+#   print('Running on TPU ', tpu.cluster_spec().as_dict()['worker'])  
+# else:
+#   strategy = tf.distribute.get_strategy() # Default strategy that works on CPU and single GPU
+#   print('Running default instead')
+# print("Number of accelerators: ", strategy.num_replicas_in_sync)
 
 #%% #Global vsrs
 TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
