@@ -97,7 +97,11 @@ model.fit(balance_ds,
           epochs=100,
           steps_per_epoch=STEPS_PER_EPOCH,
           validation_data=val,
-          callbacks=[tf.keras.callbacks.TensorBoard(log_dir=LOGDIR, histogram_freq=1)])
+          callbacks=[tf.keras.callbacks.TensorBoard(log_dir=LOGDIR, histogram_freq=1),
+                     tf.keras.callbacks.EarlyStopping(monitor='val_nlb_loss', patience=5, restore_best_weights=True)])
+
+#%%
+model.save("gs://eeefyp/models/resnet50", include_optimizer=False)
 
 #%% #Evaluate model
 model.evaluate(test, callbacks=[tf.keras.callbacks.TensorBoard(log_dir=LOGDIR)])

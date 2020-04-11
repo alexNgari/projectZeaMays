@@ -121,4 +121,4 @@ class MultiTaskImageGen(ImageGenerator):
         zinc = encoded_label[1]
         nlb = encoded_label[2]
         # encoded_label = tf.convert_to_tensor(encoded_label, dtype=tf.int64)
-        return img, (faw, zinc)
+        return img, (faw, zinc, nlb)
