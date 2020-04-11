@@ -60,7 +60,8 @@ class ImageGenerator():
             return self.full_set\
                         .shuffle(int(0.8*0.8*self.get_num_images()))\
                         .map(augment, num_parallel_calls=AUTOTUNE)\
-                        .repeat()
+                        .repeat()\
+                        .cache()
         # else:
         #     return self.full_set\
         #                 .shuffle(int(0.8*0.8*self.get_num_images()))\
