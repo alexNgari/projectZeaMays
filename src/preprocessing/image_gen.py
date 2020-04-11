@@ -58,10 +58,10 @@ class ImageGenerator():
     def __call__(self):
         if self.for_cnn:
             return self.full_set\
+                        .cache()\
                         .shuffle(int(0.8*0.8*self.get_num_images()))\
                         .map(augment, num_parallel_calls=AUTOTUNE)\
-                        .repeat()\
-                        .cache()
+                        .repeat()
         # else:
         #     return self.full_set\
         #                 .shuffle(int(0.8*0.8*self.get_num_images()))\

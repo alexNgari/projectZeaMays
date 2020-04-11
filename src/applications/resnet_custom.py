@@ -43,7 +43,7 @@ class ResNetBlock(tf.keras.Model):
 #%%
 def make_model(input_shape, metrics, optimizer, loss, weights_initializer='he_normal', extra_layers=False):
     res_block = ResNetBlock((3,3), [32,32,64], weights_initializer)
-    resnet = tf.keras.applications.ResNet50(include_top=False, weights=None)
+    resnet = tf.keras.applications.ResNet50(include_top=False, input_shape=input_shape, weights=None)
     for layer in resnet.layers:
         if hasattr(layer, 'kernel_initializer'):
             setattr(layer, 'kernel_initializer', weights_initializer)

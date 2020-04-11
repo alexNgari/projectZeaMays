@@ -42,7 +42,7 @@ TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 DATADIR = 'gs://eeefyp_data/clean'
 LOGDIR = os.path.join('gs://eeefyp_logs', f'logs/resnet_trials/{TIMESTAMP}')
-BATCH_SIZE = 32
+BATCH_SIZE = 128
 CLASS_LABELS = ['faw', 'zinc_def', 'nlb', 'healthy']
 CLASS_LABELS
 
@@ -98,7 +98,7 @@ model.fit(balance_ds,
           steps_per_epoch=STEPS_PER_EPOCH,
           validation_data=val,
           callbacks=[tf.keras.callbacks.TensorBoard(log_dir=LOGDIR, histogram_freq=1),
-                     tf.keras.callbacks.EarlyStopping(monitor='val_nlb_loss', patience=5, restore_best_weights=True)])
+                     tf.keras.callbacks.EarlyStopping(patience=5, restore_best_weights=True)])
 
 #%%
 model.save("gs://eeefyp/models/resnet50", include_optimizer=False)
