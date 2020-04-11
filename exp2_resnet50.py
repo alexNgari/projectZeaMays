@@ -63,7 +63,7 @@ val = val.concatenate(val_healthy).shuffle(1000).cache()
 val = val.batch(2*BATCH_SIZE)
 
 #%%
-num_nlb = len(os.listdir(os.path.join(DATADIR, 'NLB/nlb')))
+num_nlb = 14570
 STEPS_PER_EPOCH = np.ceil(3*0.8*0.8*num_nlb/BATCH_SIZE)
 print(num_nlb, STEPS_PER_EPOCH)
 

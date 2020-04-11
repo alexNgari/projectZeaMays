@@ -2,7 +2,7 @@
 Methods and classes to generate batches of images to feed to models.
 """
 #%% Imports
-import os
+# import os
 import tensorflow as tf
 from src.preprocessing.dataset_stuff import get_all_files, process_path, augment
 
@@ -39,7 +39,7 @@ class ImageGenerator():
         """
         Get the number of images in the directory
         """
-        return len(os.listdir(self.data_dir))
+        return len(tf.io.gfile.listdir(self.data_dir))
 
     def split_dataset(self):
         """
