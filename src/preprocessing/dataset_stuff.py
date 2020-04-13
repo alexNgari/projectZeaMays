@@ -65,6 +65,31 @@ def augment(img, label):
     # img = tf.image.random_saturation(img, lower=0.0, upper=0.3)
     return img, label
 
+def tensor_to_feature(tensor: tf.Tensor):
+    """
+    Convert non-scalar tensor to a tf.train.Feature appendable in a tf.train.Example
+    """
+    serialized_tensor = tf.io.serialize_tensor(tensor)
+    bytes_string = serialized_tensor.numpy()
+    bytes_list = tf.train.BytesList(value=[bytes_string])
+    return tf.train.Feature(bytes_list=bytes_list)
+
+
+def create_example(img: tf.Tensor, lbl: tf.Tensor):
+    """
+    Converts an image, label pair to a tf.train.Example object
+    """    
+    feature = {
+        'height': tf.train.Feature(int64_list=tf.train.Int64List(value=[img.shape[0]])),
+        'width': tf.train.Feature(int64_list=tf.train.Int64List(value=[img.shape[1]])),
+        'depth': tf.train.Feature(int64_list=tf.train.Int64List(value=[img.shape[2]])),
+        'label': tf.train.Feature(float_list=tf.train.FloatList(value=tf.unstack(lbl))),
+        'image_raw': tensor_to_feature(img)
+    }
+    return tf.train.Example(features=tf.train.Features(feature=feature))
+
+def separate_images(image, label):
+    return image
 
 # def get_colour_features(image):
 #     """

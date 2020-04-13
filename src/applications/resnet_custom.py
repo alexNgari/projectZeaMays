@@ -42,22 +42,40 @@ class ResNetBlock(tf.keras.Model):
 
 #%%
 def make_model(input_shape, metrics, optimizer, loss, weights_initializer='he_normal', extra_layers=False):
-    res_block = ResNetBlock((3,3), [32,32,64], weights_initializer)
+    res_block = ResNetBlock((3,3), [512,512,2048], weights_initializer)
     resnet = tf.keras.applications.ResNet50(include_top=False, input_shape=input_shape, weights=None)
     for layer in resnet.layers:
         if hasattr(layer, 'kernel_initializer'):
             setattr(layer, 'kernel_initializer', weights_initializer)
+    
     inputs = Input(shape=input_shape)
-    x = resnet(inputs)
+    x = layers.BatchNormalization(axis=3)(inputs)
+    x = resnet(x)    
+    
     if extra_layers:
-        x = layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer=weights_initializer)(x)
-        x = res_block(x)
-    x = layers.Flatten()(x)
-    faw = layers.Dense(1, activation='sigmoid', name='faw')(x)
-    zinc = layers.Dense(1, activation='sigmoid', name='zinc')(x)
-    nlb = layers.Dense(1, activation='sigmoid', name='nlb')(x)
+        faw = res_block(x)
+        faw = layers.GlobalAveragePooling2D()(faw)
+        faw = layers.Dense(64, activation='relu', kernel_initializer='he_normal')(faw)
+        faw = layers.Dense(1, activation='sigmoid', name='faw')(faw)
 
-    model = tf.keras.Model(inputs=inputs, outputs=[faw, zinc, nlb])
+        zinc = res_block(x)
+        zinc = layers.GlobalAveragePooling2D()(zinc)
+        zinc = layers.Dense(64, activation='relu', kernel_initializer='he_normal')(zinc)
+        zinc = layers.Dense(1, activation='sigmoid', name='zinc')(zinc)
+
+        nlb = res_block(x)
+        nlb = layers.GlobalAveragePooling2D()(nlb)
+        nlb = layers.Dense(64, activation='relu', kernel_initializer='he_normal')(nlb)
+        nlb = layers.Dense(1, activation='sigmoid', name='nlb')(nlb)
+    
+    else:
+        x = layers.GlobalAveragePooling2D()(x)
+        x = layers.Dense(64, activation='relu', kernel_initializer='he_normal')(x)
+        faw = layers.Dense(1, activation='sigmoid', name='faw')(x)
+        zinc = layers.Dense(1, activation='sigmoid', name='zinc')(x)
+        # nlb = layers.Dense(1, activation='sigmoid', name='nlb')(x)
+
+    model = tf.keras.Model(inputs=inputs, outputs=[faw, zinc])
 
     model.compile(optimizer=optimizer,
                 loss=loss,

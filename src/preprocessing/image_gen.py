@@ -4,7 +4,8 @@ Methods and classes to generate batches of images to feed to models.
 #%% Imports
 # import os
 import tensorflow as tf
-from src.preprocessing.dataset_stuff import get_all_files, process_path, augment
+from src.preprocessing.dataset_stuff import get_all_files, process_path,\
+                                            augment, decode_image, separate_images
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
@@ -54,6 +55,16 @@ class ImageGenerator():
         val_set = self.full_set.take(int(0.2*0.8*self.get_num_images()))
         self.full_set = self.full_set.skip(int(0.2*0.8*self.get_num_images()))
         return test_set, val_set
+
+    def get_all(self):
+        self.full_set = get_all_files(self.data_dir)\
+            .map(process_path, num_parallel_calls=AUTOTUNE)\
+            .map(self.encode_labels, num_parallel_calls=AUTOTUNE)
+            # .shuffle(self.get_num_images())
+        return self.full_set
+
+    def get_train_img(self):
+        return self.full_set.map(separate_images, num_parallel_calls=AUTOTUNE)
 
     def __call__(self):
         if self.for_cnn:
@@ -121,4 +132,52 @@ class MultiTaskImageGen(ImageGenerator):
         zinc = encoded_label[1]
         nlb = encoded_label[2]
         # encoded_label = tf.convert_to_tensor(encoded_label, dtype=tf.int64)
-        return img, (faw, zinc, nlb)
+        return img, (faw, zinc)
+
+class MultiTaskImageGen2(ImageGenerator):
+    """
+    create a dataset from a tfrecord file
+    """
+    def __init__(self, file_path, feature_dict, *, for_cnn=True):
+        self.raw_set = tf.data.TFRecordDataset(file_path)
+        self.feat_dict = feature_dict
+        self.count = 0
+        for item in self.raw_set:
+            self.count += 1
+        self.full_set=None
+        self.for_cnn = for_cnn
+
+    def encode_labels(self, img):
+        pass
+
+    def get_num_images(self):
+        return self.count
+
+    def parse_dataset(self, example):
+        return tf.io.parse_single_example(example, self.feat_dict)
+
+    def extract_fn(self, sample):
+        image = decode_image(sample['image'][0])
+        labels = tf.sparse.to_dense(sample['labels'])
+        labels = labels[0], labels[1]
+        return image, labels
+
+    def split_dataset(self):
+        """
+        Get training and validation sets: splits 80-20 twice
+        """
+        self.full_set = self.raw_set\
+            .map(self.parse_dataset, num_parallel_calls=AUTOTUNE)\
+            .map(self.extract_fn, num_parallel_calls=AUTOTUNE)\
+            .shuffle(self.get_num_images())
+        test_set = self.full_set.take(int(0.2*self.get_num_images()))
+        self.full_set = self.full_set.skip(int(0.2*self.get_num_images()))
+        val_set = self.full_set.take(int(0.2*0.8*self.get_num_images()))
+        self.full_set = self.full_set.skip(int(0.2*0.8*self.get_num_images()))
+        return test_set, val_set
+
+    def get_all(self):
+        return self.raw_set\
+            .map(self.parse_dataset, num_parallel_calls=AUTOTUNE)\
+            .map(self.extract_fn, num_parallel_calls=AUTOTUNE)\
+            
