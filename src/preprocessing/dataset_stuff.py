@@ -3,8 +3,8 @@ Helper functions for the image generator classes.
 """
 import numpy as np
 import tensorflow as tf
-import cv2
-from skimage import io, feature, color, img_as_ubyte
+# import cv2
+# from skimage import io, feature, color, img_as_ubyte
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
@@ -65,30 +65,55 @@ def augment(img, label):
     # img = tf.image.random_saturation(img, lower=0.0, upper=0.3)
     return img, label
 
+def tensor_to_feature(tensor: tf.Tensor):
+    """
+    Convert non-scalar tensor to a tf.train.Feature appendable in a tf.train.Example
+    """
+    serialized_tensor = tf.io.serialize_tensor(tensor)
+    bytes_string = serialized_tensor.numpy()
+    bytes_list = tf.train.BytesList(value=[bytes_string])
+    return tf.train.Feature(bytes_list=bytes_list)
 
-def get_colour_features(image):
-    """
-    param:  Abs path to image to extract features from.
-    return: Array of means and standard deviations of BGR.
-    """
-    image = cv2.imread(image)
-    (means, std_devs) = cv2.meanStdDev(image)
-    return np.concatenate([means, std_devs]).flatten()
 
-def get_texture_features(image):
+def create_example(img: tf.Tensor, lbl: tf.Tensor):
     """
-    param:  path to image
-    return: texture features: []
-    """
-    image = io.imread(image)
-    image = color.rgb2gray(image)
-    image = img_as_ubyte(image)
-    glcm = feature.greycomatrix(image, [1], [0])
-    features = []
-    features.append(feature.greycoprops(glcm, 'contrast')[0, 0])
-    features.append(feature.greycoprops(glcm, 'dissimilarity')[0, 0])
-    features.append(feature.greycoprops(glcm, 'homogeneity')[0, 0])
-    features.append(feature.greycoprops(glcm, 'energy')[0, 0])
-    features.append(feature.greycoprops(glcm, 'correlation')[0, 0])
-    features.append(feature.greycoprops(glcm, 'ASM')[0, 0])
-    return np.array(features)
+    Converts an image, label pair to a tf.train.Example object
+    """    
+    feature = {
+        'height': tf.train.Feature(int64_list=tf.train.Int64List(value=[img.shape[0]])),
+        'width': tf.train.Feature(int64_list=tf.train.Int64List(value=[img.shape[1]])),
+        'depth': tf.train.Feature(int64_list=tf.train.Int64List(value=[img.shape[2]])),
+        'label': tf.train.Feature(float_list=tf.train.FloatList(value=tf.unstack(lbl))),
+        'image_raw': tensor_to_feature(img)
+    }
+    return tf.train.Example(features=tf.train.Features(feature=feature))
+
+def separate_images(image, label):
+    return image
+
+# def get_colour_features(image):
+#     """
+#     param:  Abs path to image to extract features from.
+#     return: Array of means and standard deviations of BGR.
+#     """
+#     image = cv2.imread(image)
+#     (means, std_devs) = cv2.meanStdDev(image)
+#     return np.concatenate([means, std_devs]).flatten()
+
+# def get_texture_features(image):
+#     """
+#     param:  path to image
+#     return: texture features: []
+#     """
+#     image = io.imread(image)
+#     image = color.rgb2gray(image)
+#     image = img_as_ubyte(image)
+#     glcm = feature.greycomatrix(image, [1], [0])
+#     features = []
+#     features.append(feature.greycoprops(glcm, 'contrast')[0, 0])
+#     features.append(feature.greycoprops(glcm, 'dissimilarity')[0, 0])
+#     features.append(feature.greycoprops(glcm, 'homogeneity')[0, 0])
+#     features.append(feature.greycoprops(glcm, 'energy')[0, 0])
+#     features.append(feature.greycoprops(glcm, 'correlation')[0, 0])
+#     features.append(feature.greycoprops(glcm, 'ASM')[0, 0])
+#     return np.array(features)
