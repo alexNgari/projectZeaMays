@@ -17,7 +17,7 @@ class GenerateTFRecord:
         self.label = img_folder.split('/')[-1]
         encoded_label = self._get_label_with_filename()
         img_paths = tf.io.gfile.listdir(img_folder)
-        img_paths = [os.path.abspath(os.path.join(img_folder, i)) for i in img_paths]
+        img_paths = [os.path.join(img_folder, i) for i in img_paths]
 
         with tf.io.TFRecordWriter(tfrecord_file_name) as writer:
             for img_path in img_paths:
@@ -50,7 +50,8 @@ class GenerateTFRecord:
         faw = encoded_label[0]
         zinc = encoded_label[1]
         nlb = encoded_label[2]
-        return (faw, zinc)
+        healthy = encoded_label[3]
+        return (faw, zinc, nlb)
 
 #%%
 if __name__ == '__main__':
