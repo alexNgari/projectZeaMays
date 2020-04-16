@@ -65,10 +65,12 @@ def make_model(input_shape, metrics, optimizer, loss, input_normalizer=None,\
         if hasattr(layer, 'kernel_initializer'):
             setattr(layer, 'kernel_initializer', weights_initializer)
     
-    x = Input(shape=input_shape)
+    inputs = Input(shape=input_shape)
     if input_normalizer:
-        x = input_normalizer(x)
-    x = resnet(x)    
+        x = input_normalizer(inputs)
+        x = resnet(x)
+    else:
+        x = resnet(x)    
     
     if extra_layers:
         faw = res_block(x)
