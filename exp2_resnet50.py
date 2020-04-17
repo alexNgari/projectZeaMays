@@ -1,8 +1,7 @@
 """
-Resnet
 """
 
-#%% #Imports
+#%%
 import os
 import datetime
 import numpy as np
@@ -10,98 +9,86 @@ import tensorflow as tf
 from tensorflow.keras import layers, models, Input
 import tensorboard
 from tensorboard.plugins.hparams import api as hp
-from src.preprocessing.image_gen import MultiTaskImageGen, BalanceImageGenerator
+from src.preprocessing.image_gen import MultiTaskImageGen2, BalanceImageGenerator
 from src.applications.resnet_custom import make_model
 
-#%% #Check for TPU
-resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='fyp',
-                                                          zone='europe-west4-a',
-                                                          project='eeefyp')
+#%%
+resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='grpc://' + os.environ['COLAB_TPU_ADDR'])
 tf.config.experimental_connect_to_cluster(resolver)
 tf.tpu.experimental.initialize_tpu_system(resolver)
-strategy=tf.distribute.experimental.TPUStrategy(resolver)                                                          
-# try:
-  # resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='fyp',
-  #                                                         zone='europe-west4-a',
-  #                                                         project='eeefyp') # TPU detection
-# except ValueError: # If TPU not found
-#   tpu = None 
+strategy = tf.distribute.experimental.TPUStrategy(resolver)
 
-# if tpu:
-#   tf.config.experimental_connect_to_cluster(resolver)
-#   tf.tpu.experimental.initialize_tpu_system(tpu)
-#   strategy = tf.distribute.experimental.TPUStrategy(tpu, steps_per_run=128)
-#   print('Running on TPU ', tpu.cluster_spec().as_dict()['worker'])  
-# else:
-#   strategy = tf.distribute.get_strategy() # Default strategy that works on CPU and single GPU
-#   print('Running default instead')
-# print("Number of accelerators: ", strategy.num_replicas_in_sync)
-
-#%% #Global vsrs
+#%%
 TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 AUTOTUNE = tf.data.experimental.AUTOTUNE
-DATADIR = 'gs://eeefyp_data/clean'
-LOGDIR = os.path.join('gs://eeefyp_logs', f'logs/resnet_trials/{TIMESTAMP}')
+DATADIR = 'gs://alexfyp_data'
+LOGDIR = 'gs://alexfyp_logs'
 BATCH_SIZE = 128
 CLASS_LABELS = ['faw', 'zinc_def', 'nlb', 'healthy']
-CLASS_LABELS
 
-#%% #Dataset initialisation
-ds_faw = MultiTaskImageGen(os.path.join(DATADIR, 'final/faw'), 256, CLASS_LABELS)
-test_faw, val_faw = ds_faw.split_dataset()
-
-ds_zinc = MultiTaskImageGen(os.path.join(DATADIR, 'final/zinc_def'), 256, CLASS_LABELS)
-test_zinc, val_zinc = ds_zinc.split_dataset()
-
-ds_nlb = MultiTaskImageGen(os.path.join(DATADIR, 'NLB/nlb'), 256, CLASS_LABELS)
-test_nlb, val_nlb = ds_nlb.split_dataset()
-
-ds_healthy = MultiTaskImageGen(os.path.join(DATADIR, 'NLB/healthy'), 256, CLASS_LABELS)
-test_healthy, val_healthy = ds_healthy.split_dataset()
-
-#%% #Test set
-test = test_faw.concatenate(test_healthy)
-test = test.concatenate(test_zinc)
-test = test.concatenate(test_nlb).shuffle(1000)
-test = test.batch(2*BATCH_SIZE)
-
-#%% #Validation set
-val = val_faw.concatenate(val_healthy)
-val = val.concatenate(val_zinc)
-val = val.concatenate(val_healthy).shuffle(1000).cache()
-val = val.batch(2*BATCH_SIZE)
-
-#%%
+EPOCHS=100
 num_nlb = 14570
 STEPS_PER_EPOCH = np.ceil(3*0.8*0.8*num_nlb/BATCH_SIZE)
-print(num_nlb, STEPS_PER_EPOCH)
 
 #%%
-balance_ds = BalanceImageGenerator(BATCH_SIZE, ds_faw(), ds_healthy(), ds_zinc(), ds_nlb())()
+feature_description = {
+    'rows': tf.io.FixedLenFeature([1], tf.int64),
+    'cols': tf.io.FixedLenFeature([1], tf.int64),
+    'channels': tf.io.FixedLenFeature([1], tf.int64),
+    'image': tf.io.FixedLenFeature([1], tf.string),
+    'labels': tf.io.VarLenFeature(tf.float32)
+}
 
 #%%
-initializer = tf.keras.initializers.he_normal()
-loss = tf.keras.losses.BinaryCrossentropy()
-optimizer = tf.keras.optimizers.Adam()
-METRICS = [tf.keras.metrics.BinaryAccuracy(name='acc'),
-            tf.keras.metrics.Precision(name='psn'),
-            tf.keras.metrics.Recall(name='rcl'),
-            tf.keras.metrics.AUC(name='AUC')]
+train_files = [os.path.join(DATADIR, f'sharded/train/train{index}.tfrecord') for index in range(16)]
+test_files = [os.path.join(DATADIR, f'sharded/test/test{index}.tfrecord') for index in range(8)]
+val_files = [os.path.join(DATADIR, f'sharded/val/val{index}.tfrecord') for index in range(8)]
 
 #%%
-with strategy.scope():
-    model = make_model((256,256,3), METRICS, optimizer, loss, initializer)
+train_ds = MultiTaskImageGen2(train_files, feature_description)
+val_ds = MultiTaskImageGen2(val_files, feature_description)
+test_ds = MultiTaskImageGen2(test_files, feature_description)
 
 #%%
-model.fit(balance_ds,
-          epochs=100,
+train_ds = train_ds.get_all().shuffle(2048).batch(BATCH_SIZE, drop_remainder=True).prefetch(AUTOTUNE)
+val_ds = val_ds.get_all().shuffle(1024).batch(BATCH_SIZE, drop_remainder=True).prefetch(AUTOTUNE)
+test_ds = test_ds.get_all().shuffle(1024).batch(BATCH_SIZE, drop_remainder=True)
+
+#%%
+def train_generator():
+  for X, (y1, y2, y3) in train_ds:
+    yield X.numpy(), (y1.numpy(), y2.numpy(), y3.numpy())
+
+def val_generator():
+  for X, (y1, y2, y3) in val_ds:
+    yield X.numpy(), (y1.numpy(), y2.numpy(), y3.numpy())
+
+def test_generator():
+  for X, (y1, y2, y3) in test_ds:
+    yield X.numpy(), [y1.numpy(), y2.numpy(), y3.numpy()]
+
+#%%
+# options = tf.data.Options()
+# options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.AUTO
+# train_ds = train_ds.with_options(options)
+# val_ds = val_ds.with_options(options)
+# test_ds = test_ds.with_options(options)
+
+#%%
+# with strategy.scope():
+#   initializer = tf.keras.initializers.he_normal()
+#   loss = tf.keras.losses.BinaryCrossentropy()
+#   optimizer = tf.keras.optimizers.Adam()
+#   METRICS = [tf.keras.metrics.BinaryAccuracy(name='acc'),
+#               tf.keras.metrics.Precision(name='psn'),
+#               tf.keras.metrics.Recall(name='rcl'),
+#               tf.keras.metrics.AUC(name='AUC')]
+#   model = make_model((256,256,3), METRICS, optimizer, loss, weights_initializer=initializer)
+
+# model.summary()
+
+#%%
+model.fit(train_generator(),
+          epochs=EPOCHS,
           steps_per_epoch=STEPS_PER_EPOCH,
-          validation_data=val,
-          callbacks=[tf.keras.callbacks.TensorBoard(log_dir=LOGDIR, histogram_freq=1),
-                     tf.keras.callbacks.EarlyStopping(patience=5, restore_best_weights=True)])
-
-#%%
-model.save("gs://eeefyp/models/resnet50", include_optimizer=False)
-
-#%% #Evaluate model
-model.evaluate(test, callbacks=[tf.keras.callbacks.TensorBoard(log_dir=LOGDIR)])
+          validation_data=val_generator())
