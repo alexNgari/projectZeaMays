@@ -31,6 +31,7 @@ def decode_image(img):
     """
     img = tf.image.decode_jpeg(img, channels=3)
     img = tf.image.convert_image_dtype(img, tf.float32)
+    img = tf.reshape(img, (256,256,3))
     # img = tf.image.resize(img, [IMG_SIZE, IMG_SIZE])
     return img
 
@@ -56,13 +57,14 @@ def augment(img, label):
     Add random perturbations to the images to reduce overfitting.
     Also SMOTE
     """
-    # img = tf.image.random_brightness(img, 0.05)
-    # img = tf.image.random_contrast(img, lower=0.0, upper=0.1)
+    img = tf.image.random_brightness(img, 0.3)
+    img = tf.image.random_contrast(img, lower=0.5, upper=2)
     img = tf.image.random_flip_left_right(img)
     img = tf.image.random_flip_up_down(img)
-    # img = tf.image.random_jpeg_quality(img, min_jpeg_quality=70, max_jpeg_quality=100)
-    # img = tf.image.random_hue(img, 0.3)
-    # img = tf.image.random_saturation(img, lower=0.0, upper=0.3)
+    img = tf.image.random_jpeg_quality(img, min_jpeg_quality=20, max_jpeg_quality=100)
+    img = tf.image.random_hue(img, 0.1)
+    img = tf.image.random_saturation(img, lower=0.5, upper=2)
+    img = tf.reshape(img, (256,256,3))
     return img, label
 
 def tensor_to_feature(tensor: tf.Tensor):

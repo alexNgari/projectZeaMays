@@ -98,9 +98,10 @@ class BalanceImageGenerator():
 
     def __call__(self):
         resampled_ds = tf.data.experimental.sample_from_datasets(self.datasets,\
-            weights=self.calculate_weights())\
-            .batch(self.batch_size)\
-            .prefetch(AUTOTUNE)
+            weights=self.calculate_weights())#\
+            # .cache()\
+            # .prefetch(AUTOTUNE)
+            # .batch(self.batch_size)\
         return resampled_ds
 
 
@@ -132,20 +133,21 @@ class MultiTaskImageGen(ImageGenerator):
         zinc = encoded_label[1]
         nlb = encoded_label[2]
         # encoded_label = tf.convert_to_tensor(encoded_label, dtype=tf.int64)
-        return img, (faw, zinc)
+        return img, (faw, zinc, nlb)
 
 class MultiTaskImageGen2(ImageGenerator):
     """
     create a dataset from a tfrecord file
     """
-    def __init__(self, file_path, feature_dict, *, for_cnn=True):
-        self.raw_set = tf.data.TFRecordDataset(file_path)
+    def __init__(self, file_path, feature_dict, *, for_train=False, for_cnn=True):
+        self.raw_set = tf.data.TFRecordDataset(file_path, num_parallel_reads=8)
         self.feat_dict = feature_dict
         self.count = 0
-        for item in self.raw_set:
-            self.count += 1
+        # for item in self.raw_set:
+        #     self.count += 1
         self.full_set=None
         self.for_cnn = for_cnn
+        self.for_train = for_train
 
     def encode_labels(self, img):
         pass
@@ -159,7 +161,7 @@ class MultiTaskImageGen2(ImageGenerator):
     def extract_fn(self, sample):
         image = decode_image(sample['image'][0])
         labels = tf.sparse.to_dense(sample['labels'])
-        labels = labels[0], labels[1]
+        labels = [labels[0]], [labels[1]], [labels[2]]
         return image, labels
 
     def split_dataset(self):
@@ -177,7 +179,11 @@ class MultiTaskImageGen2(ImageGenerator):
         return test_set, val_set
 
     def get_all(self):
-        return self.raw_set\
-            .map(self.parse_dataset, num_parallel_calls=AUTOTUNE)\
-            .map(self.extract_fn, num_parallel_calls=AUTOTUNE)\
-            
+        if not self.for_train:
+          return self.raw_set\
+              .map(self.parse_dataset, num_parallel_calls=AUTOTUNE)\
+              .map(self.extract_fn, num_parallel_calls=AUTOTUNE)
+        else:
+          return self.raw_set\
+              .map(self.parse_dataset, num_parallel_calls=AUTOTUNE)\
+              .map(self.extract_fn, num_parallel_calls=AUTOTUNE)
