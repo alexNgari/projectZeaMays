@@ -40,7 +40,7 @@ class ResNetBlock(tf.keras.Model):
         return tf.nn.relu(x)
 
 #%%
-def make_model(input_shape, metrics, optimizer, loss, input_normalizer=None,\
+def make_model(input_shape, metrics, optimizer, loss, dropout, input_normalizer=None,\
                 weights_initializer='he_normal', extra_layers=False):
     """
     Build and compiled model with resnet50 as the base model.
@@ -67,34 +67,73 @@ def make_model(input_shape, metrics, optimizer, loss, input_normalizer=None,\
     
     inputs = Input(shape=input_shape)
     if input_normalizer:
+<<<<<<< HEAD
         x = input_normalizer(inputs)
         x = resnet(x)
     else:
         x = resnet(x)    
+||||||| merged common ancestors
+        x = input_normalizer(x)
+    x = resnet(x)    
+=======
+        x = input_normalizer(inputs)
+        x = resnet(x)
+    else:
+        x = resnet(inputs)    
+>>>>>>> a_play
     
     if extra_layers:
-        faw = res_block(x)
+        faw = layers.Conv2D(512, (1,1), activation='relu', kernel_initializer=weights_initializer)(x)
+        faw = layers.BatchNormalization()(faw)
+        faw = layers.Activation('relu')(faw)
+        faw = layers.Conv2D(512, (3,3), padding='same', activation='relu', kernel_initializer=weights_initializer)(faw)
+        faw = layers.BatchNormalization()(faw)
+        faw = layers.Activation('relu')(faw)
+        faw = layers.Conv2D(2048, (1,1), activation='relu', kernel_initializer=weights_initializer)(faw)
+        faw = layers.BatchNormalization()(faw)
+        faw = layers.Add()([faw, x])
+        faw = layers.Activation('relu')(faw)
         faw = layers.GlobalAveragePooling2D()(faw)
-        faw = layers.Dense(1, activation='sigmoid', name='faw')(faw)
+        faw = layers.Dropout(dropout)(faw)
+        faw = layers.Dense(1, activation='sigmoid', name='faw', dtype='float32')(faw)
 
-        zinc = res_block(x)
+        zinc = layers.Conv2D(512, (1,1), activation='relu', kernel_initializer=weights_initializer)(x)
+        zinc = layers.BatchNormalization()(zinc)
+        zinc = layers.Activation('relu')(zinc)
+        zinc = layers.Conv2D(512, (3,3), padding='same', activation='relu', kernel_initializer=weights_initializer)(zinc)
+        zinc = layers.BatchNormalization()(zinc)
+        zinc = layers.Activation('relu')(zinc)
+        zinc = layers.Conv2D(2048, (1,1), activation='relu', kernel_initializer=weights_initializer)(zinc)
+        zinc = layers.BatchNormalization()(zinc)
+        zinc = layers.Add()([zinc, x])
+        zinc = layers.Activation('relu')(zinc)
         zinc = layers.GlobalAveragePooling2D()(zinc)
-        zinc = layers.Dense(1, activation='sigmoid', name='zinc')(zinc)
+        zinc = layers.Dropout(dropout)(zinc)
+        zinc = layers.Dense(1, activation='sigmoid', name='zinc', dtype='float32')(zinc)
 
-        nlb = res_block(x)
+        nlb = layers.Conv2D(512, (1,1), activation='relu', kernel_initializer=weights_initializer)(x)
+        nlb = layers.BatchNormalization()(nlb)
+        nlb = layers.Conv2D(512, (3,3), padding='same', activation='relu', kernel_initializer=weights_initializer)(nlb)
+        nlb = layers.BatchNormalization()(nlb)
+        nlb = layers.Conv2D(2048, (1,1), activation='relu', kernel_initializer=weights_initializer)(nlb)
+        nlb = layers.BatchNormalization()(nlb)
+        nlb = layers.Add()([nlb, x])
+        nlb = layers.Activation('relu')(nlb)
         nlb = layers.GlobalAveragePooling2D()(nlb)
-        nlb = layers.Dense(1, activation='sigmoid', name='nlb')(nlb)
+        nlb = layers.Dropout(dropout)(nlb)
+        nlb = layers.Dense(1, activation='sigmoid', name='nlb', dtype='float32')(nlb)
     
     else:
         x = layers.GlobalAveragePooling2D()(x)
-        faw = layers.Dense(1, activation='sigmoid', name='faw')(x)
-        zinc = layers.Dense(1, activation='sigmoid', name='zinc')(x)
-        nlb = layers.Dense(1, activation='sigmoid', name='nlb')(x)
+        x = layers.Dropout(dropout)(x)
+        faw = layers.Dense(1, activation='sigmoid', name='faw', dtype='float32')(x)
+        zinc = layers.Dense(1, activation='sigmoid', name='zinc', dtype='float32')(x)
+        nlb = layers.Dense(1, activation='sigmoid', name='nlb', dtype='float32')(x)
 
     model = tf.keras.Model(inputs=inputs, outputs=[faw, zinc, nlb])
 
     model.compile(optimizer=optimizer,
-                loss=loss,
-                metrics=metrics)
+                  loss=loss,
+                  metrics=metrics)
     return model
 
