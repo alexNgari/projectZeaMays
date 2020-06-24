@@ -161,13 +161,8 @@ class MultiTaskImageGen2(ImageGenerator):
     def extract_fn(self, sample):
         image = decode_image(sample['image'][0])
         labels = tf.sparse.to_dense(sample['labels'])
-<<<<<<< HEAD
-        labels = labels[0], labels[1], labels[2]
-||||||| merged common ancestors
-        labels = labels[0], labels[1]
-=======
-        labels = [labels[0]], [labels[1]], [labels[2]]
->>>>>>> a_play
+        # labels = [labels[0]], [labels[1]], [labels[2]]
+        labels = [labels[0]], [labels[1]]
         return image, labels
 
     def split_dataset(self):

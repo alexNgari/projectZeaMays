@@ -67,20 +67,10 @@ def make_model(input_shape, metrics, optimizer, loss, dropout, input_normalizer=
     
     inputs = Input(shape=input_shape)
     if input_normalizer:
-<<<<<<< HEAD
-        x = input_normalizer(inputs)
-        x = resnet(x)
-    else:
-        x = resnet(x)    
-||||||| merged common ancestors
-        x = input_normalizer(x)
-    x = resnet(x)    
-=======
         x = input_normalizer(inputs)
         x = resnet(x)
     else:
         x = resnet(inputs)    
->>>>>>> a_play
     
     if extra_layers:
         faw = layers.Conv2D(512, (1,1), activation='relu', kernel_initializer=weights_initializer)(x)
