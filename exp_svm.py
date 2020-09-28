@@ -87,9 +87,10 @@ with open("/home/ngari/Dev/projectzeamays/models/svm.pkl", 'wb') as file:
 with open("/home/ngari/Dev/projectzeamays/models/svm.pkl", 'rb') as file:
     pickle_model = pickle.load(file)
 
-pickle_test = pickle_model.predict(test_data)
+test_pred = pickle_model.predict(test_data)
+train_pred = pickle_model.predict(train_data)
 
 # %%
-acc(test_pred, pickle_test)
+acc(test_labels, test_pred)
 
 # %%

@@ -2,6 +2,7 @@
 __pycache__
 *.j*
 *.J*
-alexp*
 .pylintrc
-a-corrections*
+models
+data
+logs
